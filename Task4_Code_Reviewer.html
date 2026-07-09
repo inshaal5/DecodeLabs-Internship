@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DecodeLabs — Code Reviewer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js"></script>
+<style>
+  :root{
+    --paper: #f3f1e9;
+    --paper-raised: #faf9f4;
+    --ink: #14213d;
+    --ink-soft: #4a5578;
+    --rule: #cfc9b8;
+    --rule-strong: #14213d;
+    --blue: #1d4ed8;
+    --blue-soft: #dbe4fb;
+    --red: #b3402a;
+    --green: #2f6b4f;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(20,33,61,0.05) 40px),
+      repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(20,33,61,0.05) 40px),
+      var(--paper);
+    color:var(--ink);
+    font-family:'Inter', sans-serif;
+    min-height:100vh;
+    padding:28px 18px 80px;
+  }
+  .wrap{max-width:1040px;margin:0 auto;}
+
+  header{
+    border:1.5px solid var(--rule-strong);
+    padding:22px 24px;
+    margin-bottom:22px;
+    position:relative;
+    background:var(--paper-raised);
+  }
+  header::before, header::after{
+    content:"+";
+    position:absolute;
+    color:var(--rule-strong);
+    font-size:14px;
+    opacity:0.6;
+  }
+  header::before{top:-9px;left:-7px;}
+  header::after{bottom:-9px;right:-7px;}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--blue);
+    margin-bottom:8px;
+  }
+  h1{
+    font-family:'Fraunces', serif;
+    font-weight:700;
+    font-size:clamp(26px, 3.6vw, 38px);
+    margin:0 0 8px;
+    letter-spacing:-0.01em;
+  }
+  .sub{color:var(--ink-soft);font-size:14.5px;max-width:620px;line-height:1.55;}
+
+  .panel{
+    border:1.5px solid var(--rule-strong);
+    background:var(--paper-raised);
+    padding:22px 24px;
+    margin-bottom:18px;
+  }
+  .panel-label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin-bottom:16px;
+    display:flex;
+    justify-content:space-between;
+    border-bottom:1px solid var(--rule);
+    padding-bottom:10px;
+  }
+
+  label{display:block;font-size:13px;color:var(--ink-soft);margin-bottom:6px;font-weight:500;}
+  input[type=text], input[type=password], textarea{
+    width:100%;
+    background:#fff;
+    border:1px solid var(--rule);
+    color:var(--ink);
+    font-family:'Inter', sans-serif;
+    font-size:14.5px;
+    padding:10px 12px;
+    outline:none;
+    transition:border-color .15s ease;
+  }
+  input:focus, textarea:focus{border-color:var(--blue);}
+  textarea{resize:vertical;min-height:200px;font-family:'IBM Plex Mono', monospace;font-size:12.5px;line-height:1.6;}
+
+  .key-note{font-size:12px;color:var(--ink-soft);margin-top:8px;line-height:1.5;}
+  .key-note strong{color:var(--blue);font-weight:600;}
+
+  .drop{
+    border:1.5px dashed var(--rule-strong);
+    padding:28px 18px;
+    text-align:center;
+    cursor:pointer;
+    background:#fff;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .drop:hover, .drop.drag{border-color:var(--blue); background:var(--blue-soft);}
+  .drop-label{font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--ink-soft);}
+  .drop-label .fname{color:var(--blue); font-weight:600;}
+  input[type=file]{display:none;}
+
+  .or-divider{
+    text-align:center;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    color:var(--ink-soft);
+    margin:14px 0;
+    letter-spacing:0.08em;
+  }
+
+  button.primary{
+    margin-top:18px;
+    width:100%;
+    background:var(--ink);
+    color:var(--paper);
+    border:none;
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:600;
+    font-size:13px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    padding:14px;
+    cursor:pointer;
+    transition:background .15s ease;
+  }
+  button.primary:hover{background:var(--blue);}
+  button.primary:disabled{background:#b8b3a2;cursor:not-allowed;}
+
+  .trace{
+    display:flex;
+    align-items:center;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    letter-spacing:0.03em;
+    color:var(--ink-soft);
+    margin-top:16px;
+    flex-wrap:wrap;
+  }
+  .trace .step{
+    padding:5px 10px;
+    border:1px solid var(--rule);
+    margin-right:6px;
+    margin-bottom:6px;
+    transition:all .25s ease;
+  }
+  .trace .step.active{color:#fff;background:var(--blue);border-color:var(--blue);}
+  .trace .step.done{color:var(--blue);border-color:var(--blue);}
+  .trace .step.error{color:#fff;background:var(--red);border-color:var(--red);}
+  .trace .arrow{color:var(--rule-strong);margin-right:6px;margin-bottom:6px;}
+
+  .status-line{font-family:'IBM Plex Mono', monospace;font-size:12.5px;color:var(--ink-soft);margin-top:10px;min-height:18px;}
+  .status-line.error{color:var(--red);}
+  .status-line.ok{color:var(--green);}
+
+  .report-grid{display:grid;grid-template-columns:1fr;gap:18px;}
+  @media (min-width:820px){ .report-grid{grid-template-columns:1fr 1fr;} }
+
+  .report-col{border:1.5px solid var(--rule-strong);background:#fff;}
+  .report-col h3{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    margin:0;
+    padding:12px 16px;
+    border-bottom:1.5px solid var(--rule-strong);
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .report-col.bugs h3{color:var(--red);}
+  .report-col.fix h3{color:var(--green);}
+  .report-body{padding:16px 18px;font-size:13.5px;line-height:1.65;}
+  .report-body ul{margin:0;padding-left:20px;}
+  .report-body li{margin-bottom:8px;}
+  .report-body pre{
+    background:#282c34;
+    padding:14px;
+    overflow-x:auto;
+    font-size:12.5px;
+    border-radius:2px;
+  }
+  .report-body pre code{
+    color:#abb2bf;
+    background:transparent;
+  }
+  .report-body p{margin:0 0 10px;}
+  .report-body code:not(pre code){
+    background:var(--blue-soft);
+    padding:1px 5px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+  }
+
+  .placeholder-panel{
+    border:1.5px dashed var(--rule-strong);
+    padding:40px 20px;
+    text-align:center;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12.5px;
+    color:var(--ink-soft);
+  }
+
+  footer{text-align:center;color:var(--ink-soft);font-size:12px;margin-top:36px;font-family:'IBM Plex Mono', monospace;}
+  footer a{color:var(--blue);text-decoration:none;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">DecodeLabs · Project 4</div>
+    <h1>Intelligent Code Reviewer & Explainer</h1>
+    <p class="sub">Ingest a source file, run it through a locked-behavior analytical gatekeeper, and get back a deterministic bug report plus refactored code — no filler, no greetings.</p>
+  </header>
+
+  <div class="panel">
+    <div class="panel-label"><span>01 · Credentials</span><span id="key-status">not set</span></div>
+    <label for="apiKey">Google Gemini API key</label>
+    <input type="password" id="apiKey" placeholder="AIza..." autocomplete="off">
+    <p class="key-note">Kept only in this browser tab's memory — never saved. Get a free key at <strong>aistudio.google.com/apikey</strong> (no credit card needed). Refreshing the page clears it.</p>
+  </div>
+
+  <div class="panel">
+    <div class="panel-label"><span>02 · Code payload</span></div>
+
+    <div class="drop" id="dropZone">
+      <div class="drop-label" id="dropLabel">Drop a .py / .js / .java / .ts / .cpp / .go file here, or click to browse</div>
+      <input type="file" id="fileInput" accept=".py,.js,.ts,.java,.cpp,.c,.go,.rb,.php,.cs,.txt">
+    </div>
+    <div class="or-divider">— or paste code directly —</div>
+    <textarea id="codeInput" placeholder="def process_data(input):&#10;    if input is not None:&#10;        return input.strip()&#10;    else:&#10;        return None"></textarea>
+
+    <button class="primary" id="reviewBtn">Run code review</button>
+
+    <div class="trace" id="trace">
+      <span class="step" data-step="ingest">INGEST</span>
+      <span class="arrow">→</span>
+      <span class="step" data-step="context">CONTEXT ORCHESTRATION</span>
+      <span class="arrow">→</span>
+      <span class="step" data-step="request">MODEL REQUEST</span>
+      <span class="arrow">→</span>
+      <span class="step" data-step="validate">VALIDATE STRUCTURE</span>
+      <span class="arrow">→</span>
+      <span class="step" data-step="render">RENDER</span>
+    </div>
+    <div class="status-line" id="statusLine">Idle — awaiting a file or pasted code.</div>
+  </div>
+
+  <div class="panel" id="outputPanel">
+    <div class="panel-label"><span>03 · Report</span><span id="lang-label"></span></div>
+    <div id="reportArea">
+      <div class="placeholder-panel">No review generated yet.</div>
+    </div>
+  </div>
+
+  <footer>Project 4 · Code Reviewer — built for DecodeLabs · <a href="https://ai.google.dev/gemini-api/docs" target="_blank">Gemini API docs</a></footer>
+</div>
+
+<script>
+marked.setOptions({
+  highlight: function(code, lang){
+    if (lang && hljs.getLanguage(lang)) return hljs.highlight(code, {language: lang}).value;
+    return hljs.highlightAuto(code).value;
+  }
+});
+
+const apiKeyInput = document.getElementById('apiKey');
+const keyStatus = document.getElementById('key-status');
+const fileInput = document.getElementById('fileInput');
+const dropZone = document.getElementById('dropZone');
+const dropLabel = document.getElementById('dropLabel');
+const codeInput = document.getElementById('codeInput');
+const reviewBtn = document.getElementById('reviewBtn');
+const statusLine = document.getElementById('statusLine');
+const reportArea = document.getElementById('reportArea');
+const langLabel = document.getElementById('lang-label');
+
+apiKeyInput.addEventListener('input', () => {
+  keyStatus.textContent = apiKeyInput.value.trim() ? 'set' : 'not set';
+  keyStatus.style.color = apiKeyInput.value.trim() ? 'var(--blue)' : 'var(--ink-soft)';
+});
+
+let uploadedFilename = '';
+
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag'));
+dropZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropZone.classList.remove('drag');
+  if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', (e) => {
+  if (e.target.files.length) handleFile(e.target.files[0]);
+});
+
+function handleFile(file){
+  uploadedFilename = file.name;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    codeInput.value = e.target.result;
+    dropLabel.innerHTML = `Loaded: <span class="fname">${file.name}</span> (${(file.size/1024).toFixed(1)} KB) — click to replace`;
+  };
+  reader.onerror = () => {
+    setStatus('Could not read that file — unexpected encoding or binary content.', 'error');
+  };
+  reader.readAsText(file);
+}
+
+function setTrace(active, done = [], errorStep = null){
+  document.querySelectorAll('.trace .step').forEach(el => {
+    el.classList.remove('active','done','error');
+    const step = el.dataset.step;
+    if (step === errorStep) el.classList.add('error');
+    else if (step === active) el.classList.add('active');
+    else if (done.includes(step)) el.classList.add('done');
+  });
+}
+
+function setStatus(msg, type){
+  statusLine.textContent = msg;
+  statusLine.className = 'status-line' + (type ? ' ' + type : '');
+}
+
+const SYSTEM_INSTRUCTION = `You are a cold, analytical Senior Code Quality Assurance Engineer.
+You review source code for syntax anomalies, logical vulnerabilities, and performance bugs.
+You only output valid Markdown structured exactly as follows, with no text before or after:
+
+## BUG_REPORT
+- Direct, concise bullet points listing syntax anomalies, logical vulnerabilities, and performance bugs found. If none, say "No issues found."
+
+## REFACTORED_CODE
+A single fenced Markdown code block containing the corrected, compilable code, with the correct language tag.
+
+Do not write friendly greetings, do not say "Sure, here is your code", do not add any commentary outside the two sections above.`;
+
+async function fetchWithTimeoutAndRetry(url, options, {timeoutMs = 60000, retries = 2} = {}){
+  let attempt = 0;
+  while (true){
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try{
+      const res = await fetch(url, {...options, signal: controller.signal});
+      clearTimeout(timer);
+      if ((res.status === 429 || res.status === 503) && attempt < retries){
+        const backoff = Math.min(2000 * Math.pow(2, attempt), 15000) + Math.random()*500;
+        setStatus(`Throttled by API — retrying in ${(backoff/1000).toFixed(1)}s…`);
+        await new Promise(r => setTimeout(r, backoff));
+        attempt++;
+        continue;
+      }
+      return res;
+    } catch(err){
+      clearTimeout(timer);
+      if (attempt < retries && err.name === 'AbortError'){
+        attempt++;
+        continue;
+      }
+      throw err;
+    }
+  }
+}
+
+function guessLangFromFilename(name){
+  const ext = (name.split('.').pop() || '').toLowerCase();
+  const map = {py:'python', js:'javascript', ts:'typescript', java:'java', cpp:'cpp', c:'c', go:'go', rb:'ruby', php:'php', cs:'csharp'};
+  return map[ext] || '';
+}
+
+async function runReview(){
+  const key = apiKeyInput.value.trim();
+  const code = codeInput.value;
+
+  if (!key){ setStatus('Missing API key — paste one above.', 'error'); apiKeyInput.focus(); return; }
+  if (!code.trim()){ setStatus('No code provided — drop a file or paste code.', 'error'); codeInput.focus(); return; }
+
+  reviewBtn.disabled = true;
+  reportArea.innerHTML = '<div class="placeholder-panel">Analyzing…</div>';
+  langLabel.textContent = '';
+
+  setTrace('ingest');
+  setStatus('Reading raw payload into memory…');
+  await new Promise(r => setTimeout(r, 150));
+
+  setTrace('context', ['ingest']);
+  setStatus('Merging code with persona constraints…');
+  await new Promise(r => setTimeout(r, 150));
+
+  const lang = guessLangFromFilename(uploadedFilename);
+  const userPrompt = `Review the following ${lang || ''} code${uploadedFilename ? ' from file `' + uploadedFilename + '`' : ''}:\n\n\`\`\`${lang}\n${code}\n\`\`\``;
+
+  setTrace('request', ['ingest','context']);
+  setStatus('Sending request to Gemini…');
+
+  try{
+    const res = await fetchWithTimeoutAndRetry(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(key)}`,
+      {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
+          contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+          generationConfig: { temperature: 0.2 }
+        })
+      }
+    );
+
+    if (!res.ok){
+      let detail = `HTTP ${res.status}`;
+      try{
+        const errJson = await res.json();
+        if (errJson?.error?.message) detail = errJson.error.message;
+      } catch(_) {}
+      if (res.status === 400 || res.status === 403){
+        throw new Error(`Auth or request rejected (${res.status}): ${detail}`);
+      }
+      throw new Error(`Request failed: ${detail}`);
+    }
+
+    const data = await res.json();
+    const candidate = data?.candidates?.[0];
+
+    if (!candidate){
+      throw new Error('Empty response — possibly blocked by safety filters.');
+    }
+    if (candidate.finishReason === 'SAFETY' || candidate.finishReason === 'RECITATION'){
+      throw new Error(`Response blocked at the safety gate (${candidate.finishReason}).`);
+    }
+
+    const text = candidate.content?.parts?.map(p => p.text || '').join('') || '';
+
+    setTrace('validate', ['ingest','context','request']);
+    setStatus('Validating structured output…');
+    await new Promise(r => setTimeout(r, 150));
+
+    const bugMatch = text.match(/##\s*BUG_REPORT\s*([\s\S]*?)(?=##\s*REFACTORED_CODE|$)/i);
+    const codeMatch = text.match(/##\s*REFACTORED_CODE\s*([\s\S]*)/i);
+
+    if (!bugMatch || !codeMatch){
+      setTrace(null, [], 'validate');
+      setStatus('Model response missing required section headers — rejected to avoid a malformed report.', 'error');
+      reportArea.innerHTML = `<div class="placeholder-panel">Malformed response.<br><br><pre style="white-space:pre-wrap;text-align:left;">${text.replace(/</g,'&lt;')}</pre></div>`;
+      return;
+    }
+
+    setTrace('render', ['ingest','context','request','validate']);
+    setStatus('Rendering syntax-highlighted report…');
+    await new Promise(r => setTimeout(r, 120));
+
+    const bugHtml = marked.parse(bugMatch[1].trim());
+    const codeHtml = marked.parse(codeMatch[1].trim());
+
+    reportArea.innerHTML = `
+      <div class="report-grid">
+        <div class="report-col bugs">
+          <h3>⚠ Bug report</h3>
+          <div class="report-body">${bugHtml}</div>
+        </div>
+        <div class="report-col fix">
+          <h3>✓ Refactored code</h3>
+          <div class="report-body">${codeHtml}</div>
+        </div>
+      </div>`;
+
+    langLabel.textContent = lang || 'auto-detected';
+    setTrace(null, ['ingest','context','request','validate','render']);
+    setStatus('Done — structured review rendered.', 'ok');
+
+  } catch(err){
+    console.error(err);
+    const active = document.querySelector('.trace .step.active');
+    const failedStep = active ? active.dataset.step : 'request';
+    setTrace(null, [], failedStep);
+    setStatus(err.message || 'Unexpected error — see console.', 'error');
+    reportArea.innerHTML = `<div class="placeholder-panel">⚠ Review failed<br><span style="font-size:11.5px;">${(err.message||'').slice(0,160)}</span></div>`;
+  } finally {
+    reviewBtn.disabled = false;
+  }
+}
+
+reviewBtn.addEventListener('click', runReview);
+</script>
+</body>
+</html>
